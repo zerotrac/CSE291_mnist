@@ -180,5 +180,5 @@ if __name__ == "__main__":
     # 第四步：对于每一个数字，使用 KNN 来判断它是哪一个数字
     predictions = knn(train_images, train_labels, boxes)
 
-    # 第五步：重新打开待 OCR 的图片，框出所有数字（根据第四步存储的数据）并标出（根据第五步的结果）
+    # 第五步：重新打开待 OCR 的图片，框出所有数字（根据第三步存储的数据）并标出（根据第四步的结果）
     collect_result("data/1234567890.png", "data/1234567890_ocr.png", boxes, predictions)
