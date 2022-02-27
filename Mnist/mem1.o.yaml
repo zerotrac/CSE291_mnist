@@ -1,0 +1,5 @@
+type: memory
+corunning:
+    - compute1
+limits:
+    mem: 512 MB
