@@ -3,21 +3,34 @@ import numpy as np
 import cv2
 import boto3
 import pickle
-
 import const
+
+from collections import deque, Counter
+from distance_function import compressed_iou
 from typing import List
 
 s3_client = boto3.client('s3')
 
+class Box:
+    def __init__(self, wmin: int, hmin: int, wmax: int, hmax: int, compressed_img: List[int]):
+        self.wmin = wmin
+        self.hmin = hmin
+        self.wmax = wmax
+        self.hmax = hmax
+        self.compressed_img = compressed_img
+
 def lambda_handler(event, context):
-    mnist_image_download_path = '/tmp/processed-mnist_images'
-    s3_client.download_file(bucket, key, mnist_image_download_path)
-    print("training set {} downloaded from {}".format(key ,bucket))
+    mnist_bucket = "processed-mnist-training"
+    mnist_image_key = "mnist_images"
+    mnist_image_download_path = '/tmp/mnist_images'
+    s3_client.download_file(mnist_bucket, mnist_image_key, mnist_image_download_path)
+    print("mnist image downloaded from {}".format(mnist_image_download_path))
     images = get_information(mnist_image_download_path)
 
-    mnist_label_download_path = '/tmp/processed-mnist_labels'
-    s3_client.download_file(bucket, key, mnist_label_download_path)
-    print("training set {} downloaded from {}".format(key ,bucket))
+    mnist_label_key = "mnist_labels"
+    mnist_label_download_path = '/tmp/mnist_labels'
+    s3_client.download_file(mnist_bucket, mnist_label_key, mnist_label_download_path)
+    print("mnist label downloaded from {}".format(mnist_label_download_path))
     labels = get_information(mnist_label_download_path)
 
     for record in event["Records"]:
@@ -31,18 +44,18 @@ def lambda_handler(event, context):
 
         predictInput(images, labels, download_path, upload_path)
 
-        s3_client.upload_file(upload_path, const.S3output, key)
-        print("new picture uploaded to {}".format(const.S3output))
+        s3_client.upload_file(upload_path, const.S3predict, key)
+        print("new result uploaded to {}".format(const.S3predict))
 
 
-def pridictInput(images, labels, download_path, upload_path):
+def predictInput(images, labels, download_path, upload_path):
     with open(download_path, 'rb') as f:
         boxes = pickle.load(f)
         results = knn(images, labels, boxes)
 
     with open(upload_path, 'wb') as f:
-        pickle.dump(results)
-        
+        pickle.dump(results, f)
+
 def knn(images: List[List[int]], labels: List[int], boxes: List[Box]) -> List[int]:
     predictions = list()
 
@@ -57,9 +70,11 @@ def knn(images: List[List[int]], labels: List[int], boxes: List[Box]) -> List[in
         frequency = Counter(entry[1] for entry in distances[:const.K])
         predict = frequency.most_common(1)[0][0]
         predictions.append(predict)
+        print(f"knn(): predict {i + 1} / {len(boxes)} sub-image, result {predict}")
 
     return predictions
 
 def get_information(download_path):
     with open(download_path, "rb") as fin:
-        infos = pickle.load()
+        infos = pickle.load(fin)
+    return infos
