@@ -21,3 +21,5 @@ S3train = 'processed-mnist-training'
 
 # 图片预测结果存储桶
 S3output = 'mnist-output'
+
+S3predict = 'mnist-prediction'
