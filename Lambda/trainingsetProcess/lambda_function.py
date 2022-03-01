@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import boto3
 import pickle
+from typing import List
 
 import const
 from image_operation import binarization, compression
@@ -27,7 +28,7 @@ def lambda_handler(event, context):
 
         
         s3_client.upload_file(upload_path, const.S3train, key)
-        print("new training set uploaded to {}".format(const.S3name))
+        print("new training set uploaded to {}".format(const.S3train))
         
     return {
         'statusCode': 200,
